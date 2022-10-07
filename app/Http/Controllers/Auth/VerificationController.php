@@ -2,41 +2,69 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Http\Controllers\Controller;
 use App\Providers\RouteServiceProvider;
-use Illuminate\Foundation\Auth\VerifiesEmails;
+use Illuminate\Auth\Events\Verified;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\View\View;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Routing\Controller;
+use function PHPUnit\Framework\assertInstanceOf;
 
 class VerificationController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Email Verification Controller
-    |--------------------------------------------------------------------------
-    |
-    | This controller is responsible for handling email verification for any
-    | user that recently registered with the application. Emails may also
-    | be re-sent if the user didn't receive the original email message.
-    |
-    */
-
-    use VerifiesEmails;
-
-    /**
-     * Where to redirect users after verification.
-     *
-     * @var string
-     */
-    protected $redirectTo = RouteServiceProvider::HOME;
-
-    /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
-    public function __construct()
+    public function show(): View|RedirectResponse
     {
-        $this->middleware('auth');
-        $this->middleware('signed')->only('verify');
-        $this->middleware('throttle:6,1')->only('verify', 'resend');
+        /** @var MustVerifyEmail $user */
+        $user = auth()->user();
+
+        if ($user->hasVerifiedEmail()) {
+            return redirect()->intended(RouteServiceProvider::HOME);
+        }
+
+        return view('auth.verify-email');
+    }
+
+    public function store(): RedirectResponse
+    {
+        /** @var MustVerifyEmail $user */
+        $user = auth()->user();
+        assertInstanceOf(MustVerifyEmail::class, $user);
+
+        return $this->handle($user);
+    }
+
+    public function update(EmailVerificationRequest $request): RedirectResponse
+    {
+        /** @var MustVerifyEmail $user */
+        $user = auth()->user();
+
+        if ($user->hasVerifiedEmail()) {
+            return redirect()->intended(RouteServiceProvider::HOME.'?verified=1');
+        }
+
+        if ($user->markEmailAsVerified()) {
+            event(new Verified($user));
+        }
+
+        return redirect()->intended(RouteServiceProvider::HOME.'?verified=1');
+    }
+
+    private function handle(MustVerifyEmail $user): RedirectResponse
+    {
+        if ($user->hasVerifiedEmail()) {
+            return redirect()->intended(RouteServiceProvider::HOME);
+        }
+
+        $user->sendEmailVerificationNotification();
+
+        return back()->withSuccess(
+            __(
+                'Link verifikasi sudah dikirim ke alamat email :email',
+                [
+                    'email' => $user->getEmailForVerification(),
+                ]
+            ) ?? ''
+        );
     }
 }
