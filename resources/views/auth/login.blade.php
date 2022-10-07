@@ -1,73 +1,45 @@
-@extends('layouts.app')
+<x-volt-auth>
+    <h3 class="ui header horizontal divider section">@lang('laravolt::auth.login')</h3>
 
-@section('content')
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">{{ __('Login') }}</div>
+    {!! form()->open(route('auth::login.store'))->attribute('up-target', 'body') !!}
+    {!! form()->email('email')->label(__('laravolt::auth.identifier')) !!}
+    {!! form()->password('password')->label(__('laravolt::auth.password')) !!}
 
-                <div class="card-body">
-                    <form method="POST" action="{{ route('login') }}">
-                        @csrf
+    @if(config('laravolt.platform.features.captcha'))
+        <div class="field">
+            {!! app('captcha')->display() !!}
+            {!! app('captcha')->renderJs() !!}
 
-                        <div class="row mb-3">
-                            <label for="email" class="col-md-4 col-form-label text-md-end">{{ __('Email Address') }}</label>
+        </div>
+    @endif
 
-                            <div class="col-md-6">
-                                <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="email" autofocus>
-
-                                @error('email')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <label for="password" class="col-md-4 col-form-label text-md-end">{{ __('Password') }}</label>
-
-                            <div class="col-md-6">
-                                <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" required autocomplete="current-password">
-
-                                @error('password')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-6 offset-md-4">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
-
-                                    <label class="form-check-label" for="remember">
-                                        {{ __('Remember Me') }}
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row mb-0">
-                            <div class="col-md-8 offset-md-4">
-                                <button type="submit" class="btn btn-primary">
-                                    {{ __('Login') }}
-                                </button>
-
-                                @if (Route::has('password.request'))
-                                    <a class="btn btn-link" href="{{ route('password.request') }}">
-                                        {{ __('Forgot Your Password?') }}
-                                    </a>
-                                @endif
-                            </div>
-                        </div>
-                    </form>
+    <div class="ui field m-b-2">
+        <div class="ui equal width grid">
+            <div class="column left aligned">
+                <div class="ui checkbox">
+                    <input type="checkbox" name="remember" {{ request()->old('remember')?'checked':'' }}>
+                    <label>@lang('laravolt::auth.remember')</label>
                 </div>
+            </div>
+            <div class="column right aligned">
+                <a themed href="{{ route('auth::forgot.show') }}"
+                   class="link">@lang('laravolt::auth.forgot_password')</a>
             </div>
         </div>
     </div>
-</div>
-@endsection
+
+    <div class="field action">
+        <x-volt-button class="fluid">@lang('laravolt::auth.login')</x-volt-button>
+    </div>
+
+    @if(config('laravolt.platform.features.registration'))
+        <div class="ui divider section"></div>
+        <div>
+            @lang('laravolt::auth.not_registered_yet?')
+            <a themed href="{{ route('auth::registration.show') }}"
+               class="link">@lang('laravolt::auth.register_here')</a>
+        </div>
+    @endif
+    {!! form()->close() !!}
+
+</x-volt-auth>
